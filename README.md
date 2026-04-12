@@ -1,4 +1,4 @@
-# 游戏大地图实时跟点助手（本分支）
+# 洛克王国世界地图定位助手
 
 原项目：[761696148/Game-Map-Tracker](https://github.com/761696148/Game-Map-Tracker) — 上游同时提供 **SIFT** 与 **LoFTR（AI）** 两种跟点思路。
 
