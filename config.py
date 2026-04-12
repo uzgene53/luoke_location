@@ -1,0 +1,88 @@
+# ==========================================
+# 游戏地图跟点助手 - 全局配置文件
+# ==========================================
+import os
+
+_BASE = os.path.dirname(os.path.abspath(__file__))
+_OUT = os.path.join(_BASE, "out")
+# --- 1. 屏幕截图区域 (Minimap Region) ---
+# 正常启动会先倒计时再全屏框选小地图；仅在使用命令行 --no-pick 时才用下方 MINIMAP 数值
+PICK_SCREEN_COUNTDOWN_SEC = 5
+# 请根据你的显示器分辨率和游戏 UI 调整这些值（或通过框选自动得到）
+MINIMAP = {
+    "top": 292,
+    "left": 1853,
+    "width": 150,
+    "height": 150
+}
+
+# --- 2. 悬浮窗 UI 设置 ---
+WINDOW_GEOMETRY = "400x400+1500+100"  # 悬浮窗宽x高+X坐标+Y坐标
+VIEW_SIZE = 400                       # 悬浮窗画布边长（固定）
+# 以角色为中心在大图上裁剪的半宽（像素），再缩放到 VIEW_SIZE；默认=VIEW_SIZE 约为原先 VIEW_SIZE/2 的 2 倍视野
+VIEW_MAP_HALF_SIZE = 400
+
+# --- 3. 地图文件路径（须同宽同高）---
+# 搜索 / 特征匹配用底图
+LOGIC_MAP_PATH = os.path.join(_OUT, "rocom_base_z8.png")
+# 悬浮窗显示用（采集点等 overlay）
+DISPLAY_MAP_PATH = os.path.join(_OUT, "rocom_caiji_overlay.png")
+# 可选：与逻辑图同尺寸的灰度掩膜，白=有地图、黑=忽略（可与 alpha 同时使用取交集）
+LOGIC_MAP_MASK_PATH = None
+# 逻辑图为带 alpha 的 PNG 时：透明度低于此值的像素不参与 SIFT（0～255）
+SIFT_MASK_ALPHA_THRESHOLD = 16
+# 将有效区向内收缩像素，减少贴地图边缘的无效特征；0 关闭
+SIFT_MASK_EDGE_SHRINK = 2
+# 锚点缓存路径；True 时自动为 out/sift_anchors_<逻辑图文件名>.npz
+SIFT_ANCHORS_AUTO_NAME = True
+SIFT_ANCHORS_PATH = os.path.join(_OUT, "sift_anchors.npz")
+
+# --- 4. 惯性导航设置 (防跟丢兜底) ---
+MAX_LOST_FRAMES = 50                  # 最大容忍丢失帧数 (约 10 秒)
+
+# ==========================================
+# SIFT 传统视觉算法专属配置 (main_sift.py)
+# ==========================================
+SIFT_REFRESH_RATE = 33                # 毫秒；单帧算得慢时可改为 40～50
+SIFT_CLAHE_LIMIT = 3.0                # CLAHE 对比度增强极限 (用于榨取海水/草地纹理)
+SIFT_MATCH_RATIO = 0.9                # Lowe's Ratio 阈值 (越大越容易匹配，但错判率越高)
+SIFT_MIN_MATCH_COUNT = 5              # 判定成功所需的最低匹配点数
+SIFT_RANSAC_THRESHOLD = 8.0           # 允许的空间误差阈值
+# 大地图 SIFT 最大锚点数（0=不限制）。约 40 万减半可设 200000，减轻 FLANN 负担、提高帧率；改后需重算并覆盖 sift_anchors_*.npz
+SIFT_MAP_NFEATURES = 200000
+# 小地图侧 SIFT 上限（只影响截屏图，不影响大地图精度）
+SIFT_QUERY_NFEATURES = 500
+# 小地图长边降采样；0 = 全分辨率（更准、更慢）
+SIFT_QUERY_MAX_EDGE = 256
+# 截屏为方形、游戏内小地图为圆：仅在「内接椭圆」内提 SIFT，忽略四角场景/UI，减计算与误匹配
+SIFT_MINIMAP_USE_INSCRIBED_ELLIPSE = True
+# 椭圆半轴 = 矩形半宽/半高 × 该系数（1.0 为贴边内接；略小于 1 可向内收一点）
+SIFT_MINIMAP_ELLIPSE_SCALE = 0.98
+# 有上一帧位置时，只与半径内大地图锚点匹配（不删锚点，仅减少每帧参与匹配的数量）
+SIFT_LOCAL_SEARCH_RADIUS = 720
+SIFT_LOCAL_MIN_ANCHORS = 500
+SIFT_FLANN_CHECKS = 28
+SIFT_USE_BF_BELOW = 3500
+# --- 传送 / 大地图 UI：小地图暂时消失后的重定位 ---
+# 连续若干帧未匹配后，强制用全图锚点做 FLANN（不再以「旧坐标」为中心做局部匹配，避免传送后错配漂移）
+SIFT_FORCE_FULLMAP_LOST_FRAMES = 10
+# 连续未匹配超过此帧数则清空 last 坐标（不再显示惯性黄点），直到重新全局锁定
+SIFT_CLEAR_LOCK_AFTER_LOST_FRAMES = 45
+# 小地图 SIFT 点数低于此视为被 UI 遮挡/非游戏小地图，本帧不参与匹配
+SIFT_MINIMAP_MIN_KP = 8
+# 在「无可靠上一帧」或强制全图时，最低好匹配点数 = SIFT_MIN_MATCH_COUNT + 此项（抑制错配）
+SIFT_RELOC_EXTRA_MIN_MATCH = 4
+# 在悬浮窗画面右上角显示跟踪更新帧率（按相邻两次画面刷新间隔估算，EMA 平滑）
+SIFT_SHOW_FPS = True
+
+# ==========================================
+# LoFTR AI 深度学习算法专属配置 (main_ai.py)
+# ==========================================
+AI_REFRESH_RATE = 200                 # AI 推理耗时较高，建议 200ms (5fps)
+AI_CONFIDENCE_THRESHOLD = 0.25        # AI 置信度阈值 (越低越容易妥协)
+AI_MIN_MATCH_COUNT = 6                # 判定成功所需的最低匹配点数
+AI_RANSAC_THRESHOLD = 8.0             # 允许的空间误差阈值
+# 雷达扫描参数
+AI_SCAN_SIZE = 1600                   # 全局搜索时的区块大小
+AI_SCAN_STEP = 1400                   # 全局搜索的步长
+AI_TRACK_RADIUS = 500                 # 局部追踪时，向外扩展的半径 (400即截取800x800)
