@@ -32,7 +32,12 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == 1001 && captureManager.isCaptureResultOk(resultCode)) {
             CaptureSessionStore.save(resultCode, data)
 
-            startService(Intent(this, TrackingService::class.java))
+            val intent = Intent(this, ScreenCaptureService::class.java).apply {
+                putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode)
+                putExtra(ScreenCaptureService.EXTRA_RESULT_DATA, data)
+            }
+
+            startForegroundService(intent)
             startService(Intent(this, OverlayService::class.java))
         }
     }
