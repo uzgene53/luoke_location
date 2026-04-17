@@ -18,8 +18,18 @@ class OverlayService : Service() {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val msg = intent?.getStringExtra(TrackingService.EXTRA_MESSAGE) ?: return
-            textView.text = msg
+            when (intent?.action) {
+                ScreenCaptureService.ACTION_MATCH_RESULT -> {
+                    val x = intent.getDoubleExtra(ScreenCaptureService.EXTRA_POS_X, 0.0)
+                    val y = intent.getDoubleExtra(ScreenCaptureService.EXTRA_POS_Y, 0.0)
+                    val conf = intent.getFloatExtra(ScreenCaptureService.EXTRA_CONFIDENCE, 0f)
+                    textView.text = "X: ${x.toInt()}\nY: ${y.toInt()}\nConf: ${(conf * 100).toInt()}%"
+                }
+                ScreenCaptureService.ACTION_STATUS -> {
+                    val msg = intent.getStringExtra(ScreenCaptureService.EXTRA_STATUS_MSG) ?: return
+                    textView.text = msg
+                }
+            }
         }
     }
 
@@ -47,7 +57,11 @@ class OverlayService : Service() {
 
         windowManager.addView(textView, params)
 
-        registerReceiver(receiver, IntentFilter(TrackingService.ACTION_TRACKING_TICK))
+        val filter = IntentFilter().apply {
+            addAction(ScreenCaptureService.ACTION_MATCH_RESULT)
+            addAction(ScreenCaptureService.ACTION_STATUS)
+        }
+        registerReceiver(receiver, filter)
     }
 
     override fun onDestroy() {
