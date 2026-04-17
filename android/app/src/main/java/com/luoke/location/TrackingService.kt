@@ -9,15 +9,19 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import com.luoke.location.capture.FakeLocator
 
 class TrackingService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
         override fun run() {
+            val msg = FakeLocator.nextCoordinateText()
+
             sendBroadcast(Intent(ACTION_TRACKING_TICK).apply {
-                putExtra(EXTRA_MESSAGE, "Tracking loop alive")
+                putExtra(EXTRA_MESSAGE, msg)
             })
+
             handler.postDelayed(this, 1000)
         }
     }
@@ -25,7 +29,7 @@ class TrackingService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(1, buildNotification("Tracking service started"))
+        startForeground(1, buildNotification("Tracking running"))
         handler.post(ticker)
     }
 
