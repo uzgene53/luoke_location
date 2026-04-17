@@ -1,7 +1,10 @@
 package com.luoke.location
 
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.IBinder
 import android.view.Gravity
@@ -12,6 +15,13 @@ class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var textView: TextView
+
+    private val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val msg = intent?.getStringExtra(TrackingService.EXTRA_MESSAGE) ?: return
+            textView.text = msg
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -36,9 +46,12 @@ class OverlayService : Service() {
         params.y = 100
 
         windowManager.addView(textView, params)
+
+        registerReceiver(receiver, IntentFilter(TrackingService.ACTION_TRACKING_TICK))
     }
 
     override fun onDestroy() {
+        unregisterReceiver(receiver)
         windowManager.removeView(textView)
         super.onDestroy()
     }
