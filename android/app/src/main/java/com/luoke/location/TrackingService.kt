@@ -10,13 +10,30 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import com.luoke.location.capture.FakeLocator
+import com.luoke.location.capture.MiniMapCropper
+import com.luoke.location.capture.ScreenImageProvider
+import com.luoke.location.match.SiftMatcher
 
 class TrackingService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
+    private val imageProvider = ScreenImageProvider()
+    private val matcher = SiftMatcher()
+
     private val ticker = object : Runnable {
         override fun run() {
-            val msg = FakeLocator.nextCoordinateText()
+
+            val frame = imageProvider.getLatestFrame()
+
+            val msg = if (frame != null) {
+                val minimap = MiniMapCropper.crop(frame)
+                val result = matcher.match(minimap)
+
+                result?.let { "X: ${it.first}\nY: ${it.second}" }
+                    ?: FakeLocator.nextCoordinateText()
+            } else {
+                FakeLocator.nextCoordinateText()
+            }
 
             sendBroadcast(Intent(ACTION_TRACKING_TICK).apply {
                 putExtra(EXTRA_MESSAGE, msg)
