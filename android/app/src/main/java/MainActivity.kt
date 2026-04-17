@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.luoke.location.capture.ScreenCaptureManager
+import com.luoke.location.data.CaptureSessionStore
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,7 +30,10 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 1001 && captureManager.isCaptureResultOk(resultCode)) {
+            CaptureSessionStore.save(resultCode, data)
+
             startService(Intent(this, TrackingService::class.java))
+            startService(Intent(this, OverlayService::class.java))
         }
     }
 }
